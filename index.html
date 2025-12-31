@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI Image Classifier - Cat & Dog Recognition</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  </head>
+  <body>
+    <div class="background-animation"></div>
+    
+    <nav class="navbar">
+      <div class="nav-container">
+        <div class="logo">
+          <i class="fas fa-brain"></i> AI Classifier
+        </div>
+        <div class="nav-links">
+          <span>Cat & Dog Recognition</span>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <div class="hero-section">
+        <div class="hero-text">
+          <h1 class="main-title">
+            <span class="gradient-text">Image Intelligence</span>
+          </h1>
+          <p class="subtitle">Powered by Deep Learning - Classify Your Images Instantly</p>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="upload-section">
+          <form action="/predict" method="post" enctype="multipart/form-data" id="uploadForm">
+            <div class="upload-box">
+              <div class="upload-icon">
+                <i class="fas fa-cloud-upload-alt"></i>
+              </div>
+              <h2>Upload Your Image</h2>
+              <p>Drag and drop or click to select</p>
+              
+              <input type="file" name="image" id="imageInput" accept="image/*" required>
+              <label for="imageInput" class="file-label">
+                <span>Choose Image</span>
+              </label>
+              
+              <div id="previewContainer" class="preview-container" style="display:none;">
+                <img id="previewImage" alt="preview" />
+                <div class="preview-info">
+                  <p id="fileName"></p>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="predict-btn">
+              <span>Analyze Image</span>
+              <i class="fas fa-bolt"></i>
+            </button>
+          </form>
+        </div>
+
+        {% if result %}
+        <div class="result-section">
+          <div class="result-card">
+            <div class="result-content">
+              <div class="result-left">
+                {% if img_path %}
+                <div class="image-display">
+                  <div class="image-frame">
+                    <img src="/{{ img_path.replace('\\\\', '/') }}" alt="classified" />
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+              
+              <div class="result-right">
+                <div class="result-badge {% if result == 'cat' %}cat-badge{% elif result == 'dog' %}dog-badge{% else %}neither-badge{% endif %}">
+                  <i class="fas fa-{% if result == 'cat' %}cat{% elif result == 'dog' %}dog{% else %}question-circle{% endif %}"></i>
+                  <span>{{ result|upper }}</span>
+                </div>
+
+                <div class="confidence-section">
+                    {% if result == 'cat' %}
+                    <p class="confidence-desc"><strong>This is a cat</strong></p>
+                    
+                  {% elif result == 'dog' %}
+                    <p class="confidence-desc"><strong>This is a dog</strong></p>
+                    
+                  {% else %}
+                    <p class="confidence-desc"><strong>Neither dog nor cat</strong></p>
+                    <p class="confidence-detail">Uncertain prediction - model not confident enough</p>
+                  {% endif %}
+                </div>
+
+                <div class="result-actions">
+                  <a href="/" class="action-btn primary-btn">
+                    <i class="fas fa-redo"></i> Test Another
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="info-section">
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-icon cat-icon">
+                <i class="fas fa-cat"></i>
+              </div>
+              <h3>Cat Recognition</h3>
+              <p>Identifies cats with high accuracy</p>
+            </div>
+            <div class="info-card">
+              <div class="info-icon dog-icon">
+                <i class="fas fa-dog"></i>
+              </div>
+              <h3>Dog Recognition</h3>
+              <p>Detects dogs in images</p>
+            </div>
+            <div class="info-card">
+              <div class="info-icon ai-icon">
+                <i class="fas fa-microchip"></i>
+              </div>
+              <h3>AI Powered</h3>
+              <p>Uses CNN deep learning</p>
+            </div>
+            <div class="info-card">
+              <div class="info-icon fast-icon">
+                <i class="fas fa-zap"></i>
+              </div>
+              <h3>Instant Results</h3>
+              <p>Get predictions in seconds</p>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>Built with <i class="fas fa-heart"></i> using TensorFlow & Flask</p>
+    </footer>
+
+    <script>
+      const imageInput = document.getElementById('imageInput');
+      const previewContainer = document.getElementById('previewContainer');
+      const previewImage = document.getElementById('previewImage');
+      const fileName = document.getElementById('fileName');
+
+      imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            previewImage.src = event.target.result;
+            fileName.textContent = file.name;
+            previewContainer.style.display = 'block';
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Drag and drop
+      const uploadBox = document.querySelector('.upload-box');
+      uploadBox.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadBox.classList.add('dragover');
+      });
+
+      uploadBox.addEventListener('dragleave', function() {
+        uploadBox.classList.remove('dragover');
+      });
+
+      uploadBox.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadBox.classList.remove('dragover');
+        imageInput.files = e.dataTransfer.files;
+        const event = new Event('change', { bubbles: true });
+        imageInput.dispatchEvent(event);
+      });
+
+      // Set confidence fill widths (avoid putting Jinja inside inline CSS)
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.confidence-fill').forEach(function(el) {
+          const val = el.getAttribute('data-prob') || '0';
+          // ensure numeric and clamp 0-100
+          const n = Math.max(0, Math.min(100, parseFloat(val) || 0));
+          el.style.width = n + '%';
+        });
+      });
+    </script>
+  </body>
+</html>
